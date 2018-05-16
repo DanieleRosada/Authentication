@@ -2,7 +2,7 @@
     "name": "Authentication",
     "description": "Authentication and create User",
     "authors": "Daniele Rosada",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "main": "index.js",
     "dependencies": {
         "bcrypt-nodejs": "0.0.3",

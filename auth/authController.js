@@ -16,22 +16,31 @@ if (typeof localStorage === "undefined" || localStorage === null) {
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
 var config = require('../config'); // get config file
 
-router.post('/login', function(req, res) {
+router.get('/', function(req,res){
+    if (localStorage.getItem('message')){
+    var message= localStorage.getItem('message');
+    res.send(message);
+    }
+    else{
+        res.send();
+    }
+});
+router.post('/', function(req, res) {
         localStorage.clear();
     dbConnection.query('SELECT * FROM Users where username=?',[req.body.username], function(err, result) {
         if(!result[0]){
             //res.status(401).send({ auth: false, token: null });
-            localStorage.setItem('auth', false);
             localStorage.setItem('token', '');
-             return res.redirect('/me');
+            localStorage.setItem('message', 'User not find.');
+            return res.redirect('/');
         }
       // check if the password is valid 
         var passwordIsValid = (bcrypt.compareSync(req.body.password, result[0].password) && req.body.username == result[0].username);
     if (!passwordIsValid){
         //res.status(401).send({ auth: false, token: null });
-        localStorage.setItem('auth', false);
         localStorage.setItem('token', '');
-        return res.redirect('/me');
+        localStorage.setItem('message', 'Incorrect password.');
+        return res.redirect('/');
     } 
 
     // if user is found and password is valid
@@ -41,28 +50,43 @@ router.post('/login', function(req, res) {
     });
     // return the information including token as JSON
     //res.status(200).send({ auth: true, token: token });
-    localStorage.setItem('auth', true);
+
     localStorage.setItem('token', token);
     localStorage.setItem('id', result[0].id);
     localStorage.setItem('username', result[0].username);
-    
-    res.redirect('/me');
+    res.redirect('/home');
     });
     
     
 });
 
 
-router.get('/me', verifyToken, function(req, res, next) {
+router.get('/home', verifyToken, function(req, res, next) {
+    if (localStorage.getItem('message')) localstorage.setItem('message').clear();
     res.send(localStorage.getItem('username'));
 });
 
-router.post('/me', verifyToken, function(req, res, next) {
-    var user=[req.body.username, bcrypt.hashSync(req.body.password)];
-    dbConnection.query('INSERT INTO Users (username, password) VALUES (?)', [user], function (err, result) {
-        if (err) throw err;
-        console.log("Number of records inserted: " + result.affectedRows);
-      });
-      res.send("ciao")
+router.post('/home', verifyToken, function(req, res, next) {
+    dbConnection.query('SELECT * FROM Users where username=?',[req.body.username], function(err, result) {
+        if(!result[0]) res.send("User alredy exist.");
+        var user=[req.body.username, bcrypt.hashSync(req.body.password)];
+        dbConnection.query('INSERT INTO Users (username, password) VALUES (?)', [user], function (err, result) {
+        res.send("Registered user.");
+      }); 
+    });   
+});
+
+router.put('/home', verifyToken, function(req, res, next){
+    dbConnection.query('UPDATE Users SET username =?, password =? where username=?',[req.body.newUsername, bcrypt.hashSync(req.body.newPassword), req.body.username], function(err, result) {
+        if(!result[0]) res.send("Not changed, non-existent.");
+        res.send("Username and password are change, or one of the two.");
+    });
+});
+
+router.delete('/home', verifyToken, function(req,res,next){
+    dbConnection.query('DELETE FROM Users where username=?',[req.body.username], function(err, result) {
+        if(!result[0]) res.send("User not deleted, non-existent.");
+        res.send("User deleted.");
+    });
 });
 module.exports = router;

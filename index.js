@@ -7,7 +7,7 @@ app.get('/api', function (req, res) {
 });
 
 var authController = require(__root + 'auth/authController');
-app.use('/api/auth', authController);
+app.use('', authController);
 
 var server = app.listen(5000, function () {
     console.log('Application server listening on port 5000');

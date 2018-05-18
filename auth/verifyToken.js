@@ -4,17 +4,18 @@ var config = require('../config'); // get our config file
 function verifyToken(req, res, next) {
 
   // check header or url parameters or post parameters for token
-  var token = localStorage.getItem('token');
-  if (!token){
-    localStorage.setItem('message', 'No token provided.');
-    return res.redirect('/');}
+  var token = req.headers['x-access-token'];
+  if (!token) 
+    return res.status(403).send({ message: 'No token provided.' });
+
   // verifies secret and checks exp
   jwt.verify(token, config.secret, function(err, decoded) {
-    if (err){
-      localStorage.setItem('message', 'Failed to authenticate token.');
-      return res.redirect('/');}
+    if (err) 
+      return res.status(401).send({ message: 'Failed to authenticate token.' });
+
     // if everything is good, save to request for use in other routes
     req.userId = decoded.id;
+    req.username = decoded.username;
     next();
   });
 
